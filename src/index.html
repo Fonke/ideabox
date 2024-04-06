@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Boîte à idées</title>
+        <style>
+            table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+    
+            th, td {
+                border: 1px solid #dddddd;
+                text-align: left;
+                padding: 8px;
+            }
+    
+            th {
+                background-color: #f2f2f2;
+            }
+
+            tr:nth-child(even) {
+                background-color: #f2f2f2;
+            }
+
+            td:hover {
+                background-color: lightblue;
+            }
+        </style>
+        <script>
+            const TABLE_HEADER = `<tr>
+                                    <th>Acceptés</th>
+                                    <th>En attente</th>
+                                    <th>Rejetés</th>
+                                  </tr>`
+            const Request = {
+                CREATE_TICKET: 'create_ticket',
+                ACCEPT_TICKET: 'accept_ticket',
+                REJECT_TICKET: 'reject_ticket',
+                PENDING_TICKET: 'pending_ticket'
+            }
+            function createButtonId(ticketId, request) {
+                return JSON.stringify({name: request, params: {ticketId: ticketId}})
+            }
+            function onButtonClick(socket, buttonId) {
+                if (buttonId == 'create_ticket') {
+                    const request = {
+                        name: 'create_ticket',
+                        params: {
+                            ticket_title: document.getElementById('new_ticket_title').value,
+                            ticket_description: document.getElementById('new_ticket_desc').value
+                        }
+                    }
+                    socket.send(JSON.stringify(request))
+                } else {
+                    socket.send(buttonId)
+                }
+                console.log('button id clicked: ' + buttonId)
+            }
+            document.addEventListener("DOMContentLoaded", function() {
+                const socket = new WebSocket('ws://localhost:8080')
+                socket.addEventListener('open', () => {
+                    console.log('websocket connexion established')
+                    const createTicketButton = document.getElementById('create_ticket')
+                    createTicketButton.addEventListener('click', () => { onButtonClick(socket, Request.CREATE_TICKET) })
+                    const request = {name:"get_all_tickets"}
+                    socket.send(JSON.stringify(request))
+                })
+                socket.addEventListener('message', (event) => {
+                    console.log('data received from server: ' + event.data)
+                    const jsonObject = JSON.parse(event.data)
+                    const acceptedTickets = jsonObject.tickets.accepted
+                    const rejectedTickets = jsonObject.tickets.rejected
+                    const pendingTickets = jsonObject.tickets.pending
+                    let ticketIndex = 0
+                    let table = ""
+                    while ((ticketIndex < acceptedTickets.length) || (ticketIndex < rejectedTickets.length) || (ticketIndex < pendingTickets.length))
+                    {
+                        row = '<tr><td>'
+                        if (ticketIndex < acceptedTickets.length) {
+                            row += `${acceptedTickets[ticketIndex].title}
+                                <button id=${createButtonId(acceptedTickets[ticketIndex].id, Request.PENDING_TICKET)}>En attente</button>
+                                <button id=${createButtonId(acceptedTickets[ticketIndex].id, Request.REJECT_TICKET)}>Rejeter</button>`
+                        }
+                        row += '</td><td>'
+                        if (ticketIndex < pendingTickets.length) {
+                            row += `${pendingTickets[ticketIndex].title}
+                                <button id=${createButtonId(pendingTickets[ticketIndex].id, Request.ACCEPT_TICKET)}>Accepter</button>
+                                <button id=${createButtonId(pendingTickets[ticketIndex].id, Request.REJECT_TICKET)}>Rejeter</button>`
+                        }
+                        row += '</td><td>'
+                        if (ticketIndex < rejectedTickets.length) {
+                            row += `${rejectedTickets[ticketIndex].title}
+                                <button id=${createButtonId(rejectedTickets[ticketIndex].id, Request.PENDING_TICKET)}>En attente</button>
+                                <button id=${createButtonId(rejectedTickets[ticketIndex].id, Request.ACCEPT_TICKET)}>Accepter</button>`
+                        }
+                        row += "</td></tr>"
+                        table += row
+                        ticketIndex++
+                    }
+                    document.getElementById("tickets_table").innerHTML = TABLE_HEADER                 
+                    document.getElementById("tickets_table").innerHTML += table
+                    document.querySelectorAll('button').forEach((button) => {
+                        if (button.id.startsWith('{') == false) {
+                            return
+                        }
+                        button.addEventListener('click', () => {
+                            onButtonClick(socket, button.id)
+                        })
+                    });
+                })
+            })
+        </script>
+    </head>
+    <body>
+        <h1>Boîte à idées</h1>
+        <label for="new_ticket_title">Entrez le titre du ticket :</label>
+        <input type="text" id="new_ticket_title" name="ticket_title">
+        <label for="new_ticket_desc">Entrez la description du ticket :</label>
+        <input type="text" id="new_ticket_desc" name="ticket_desc">
+        <button id="create_ticket">Créer le ticket</button>
+        <div id="tickets_div"></div>
+        <table id="tickets_table">
+        </table>
+    </body>
+</html>

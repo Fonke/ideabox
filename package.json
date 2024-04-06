@@ -1,0 +1,22 @@
+{
+  "name": "ideabox",
+  "version": "1.0.0",
+  "description": "numeric equivalent of the idea box",
+  "main": "app.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsc-watch --noClear -p ./tsconfig.json --onSuccess \"node ./dist/server.js\""
+  },
+  "author": "Fonke",
+  "license": "MIT",
+  "dependencies": {
+    "uuid": "^9.0.1",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.2",
+    "@types/uuid": "^9.0.8",
+    "@types/ws": "^8.5.10",
+    "tsc-watch": "^6.2.0"
+  }
+}

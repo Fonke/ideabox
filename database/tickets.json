@@ -1,0 +1,22 @@
+{
+    "tickets":{
+        "accepted":[
+            {"id":1234, "creation_date":1711641530, "title":"ticket 1A", "description":"Bliqua excepteur consectetur veniam tempor."},
+            {"id":1235, "creation_date":1711641530, "title":"ticket 2", "description":"Excepteur ea reprehenderit eu ex."},
+            {"id":1236, "creation_date":1711641530, "title":"ticket 3", "description":"Adipisicing anim pariatur eiusmod excepteur."},
+            {"id":1237, "creation_date":1711641530, "title":"ticket 4", "description":"Et irure quis officia reprehenderit irure esse commodo dolor dolor sunt nisi eiusmod minim."}
+        ],
+        "rejected":[
+            {"id":1238, "creation_date":1711641530, "title":"ticket 5", "description":"Nisi ex enim enim reprehenderit id consectetur ut duis do voluptate aute ea culpa."},
+            {"id":1239, "creation_date":1711641530, "title":"ticket 6", "description":"Ea aute excepteur non dolor esse."},
+            {"id":1240, "creation_date":1711641530, "title":"ticket 7", "description":"Mollit aute culpa ipsum nisi."},
+            {"id":1241, "creation_date":1711641530, "title":"ticket 8", "description":"Exercitation consequat nostrud eiusmod aliquip eiusmod esse voluptate."}
+        ],
+        "pending":[
+            {"id":1242, "creation_date":1711641530, "title":"ticket 9", "description":"Quis ullamco officia non exercitation consectetur eu Lorem amet deserunt."},
+            {"id":1243, "creation_date":1711641530, "title":"ticket 10", "description":"Nisi enim consequat sit nulla fugiat eiusmod nisi."},
+            {"id":1244, "creation_date":1711641530, "title":"ticket 11", "description":"Laboris minim aliqua nulla veniam."},
+            {"id":1244, "creation_date":1711641530, "title":"ticket 12", "description":"Non ex nisi dolor esse cillum occaecat do exercitation veniam nostrud irure pariatur id."}
+        ]
+    }
+}
