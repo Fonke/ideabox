@@ -35,13 +35,17 @@
                                   </tr>`
             const Request = {
                 CREATE_TICKET: 'create_ticket',
-                ACCEPT_TICKET: 'accept_ticket',
-                REJECT_TICKET: 'reject_ticket',
-                PENDING_TICKET: 'pending_ticket'
+                MOVE_TICKET: 'move_ticket',
             }
 
-            function createButtonId(ticketId, request) {
-                return JSON.stringify({name: request, params: {ticket_id: ticketId}})
+            const TicketListName = {
+                PENDING: 'pending',
+                ACCEPTED: 'accepted',
+                REJECTED: 'rejected',
+            }
+
+            function createButtonId(ticketId, fromTicketListName, toTicketListName) {
+                return JSON.stringify({name: Request.MOVE_TICKET, params: {ticket_id: ticketId, from: fromTicketListName, to: toTicketListName}})
             }
 
             function onButtonClick(socket, buttonId) {
@@ -71,20 +75,20 @@
                     row = '<tr><td>'
                     if (ticketIndex < acceptedTickets.length) {
                         row += `${acceptedTickets[ticketIndex].title}
-                            <button id=${createButtonId(acceptedTickets[ticketIndex].id, Request.PENDING_TICKET)}>En attente</button>
-                            <button id=${createButtonId(acceptedTickets[ticketIndex].id, Request.REJECT_TICKET)}>Rejeter</button>`
+                            <button id=${createButtonId(acceptedTickets[ticketIndex].id, TicketListName.ACCEPTED, TicketListName.PENDING)}>En attente</button>
+                            <button id=${createButtonId(acceptedTickets[ticketIndex].id, TicketListName.ACCEPTED, TicketListName.REJECTED)}>Rejeter</button>`
                     }
                     row += '</td><td>'
                     if (ticketIndex < pendingTickets.length) {
                         row += `${pendingTickets[ticketIndex].title}
-                            <button id=${createButtonId(pendingTickets[ticketIndex].id, Request.ACCEPT_TICKET)}>Accepter</button>
-                            <button id=${createButtonId(pendingTickets[ticketIndex].id, Request.REJECT_TICKET)}>Rejeter</button>`
+                            <button id=${createButtonId(pendingTickets[ticketIndex].id, TicketListName.PENDING, TicketListName.ACCEPTED)}>Accepter</button>
+                            <button id=${createButtonId(pendingTickets[ticketIndex].id, TicketListName.PENDING, TicketListName.REJECTED)}>Rejeter</button>`
                     }
                     row += '</td><td>'
                     if (ticketIndex < rejectedTickets.length) {
                         row += `${rejectedTickets[ticketIndex].title}
-                            <button id=${createButtonId(rejectedTickets[ticketIndex].id, Request.PENDING_TICKET)}>En attente</button>
-                            <button id=${createButtonId(rejectedTickets[ticketIndex].id, Request.ACCEPT_TICKET)}>Accepter</button>`
+                            <button id=${createButtonId(rejectedTickets[ticketIndex].id, TicketListName.REJECTED, TicketListName.PENDING)}>En attente</button>
+                            <button id=${createButtonId(rejectedTickets[ticketIndex].id, TicketListName.REJECTED, TicketListName.ACCEPTED)}>Accepter</button>`
                     }
                     row += "</td></tr>"
                     table += row

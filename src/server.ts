@@ -7,12 +7,22 @@ const homePageContent = fs.readFileSync('src/index.html', 'utf-8');
 const ticketsContent = fs.readFileSync('database/tickets.json', 'utf-8');
 let tickets = JSON.parse(ticketsContent);
 
+function moveTicket(ticketId: string, fromTicketListName: string, toTicketListName: string): void {
+  if (fromTicketListName === toTicketListName) {
+    return;
+  }
+  const ticketIndex: number = tickets[fromTicketListName].findIndex((ticket: any): boolean => ticket.id == ticketId);
+  if (ticketIndex == -1) {
+    throw 'ticket with id: ' + ticketId + ' not found in list ' + fromTicketListName;
+  }
+  const ticket: any = tickets[fromTicketListName].splice(ticketIndex, 1).at(0);
+  tickets[toTicketListName].push(ticket);
+}
 
 function onWSClientMessage(client: ws, message: string): void {
   console.log('from websocket client: ' + message);
   const request = JSON.parse(message);
   if (request.name == 'get_all_tickets') {
-    // client.send(JSON.stringify(tickets));
     client.send(JSON.stringify({name: 'tickets', params: tickets}));
   } else if (request.name == 'create_ticket') {
     const newTicket = {
@@ -24,15 +34,12 @@ function onWSClientMessage(client: ws, message: string): void {
     tickets.pending.push(newTicket);
     console.log('new tickets = ' + JSON.stringify(tickets));
     client.send(JSON.stringify({name: 'tickets', params: tickets}));
-  } else if (request.name == 'accept_ticket') {
-    console.log('tickets.pending = ' + tickets.pending);
-    const ticketIndex: number = tickets.pending.findIndex((ticket: any) => ticket.id == request.params.ticket_id);
-    if (ticketIndex == -1) {
-      client.send(JSON.stringify({name: 'error', params: {description: 'ticket not found in pending list'}}));
-      return;
+  } else if (request.name == 'move_ticket') {
+    try {
+      moveTicket(request.params.ticket_id, request.params.from, request.params.to);
+    } catch (error) {
+      client.send(JSON.stringify({name: 'error', params: {description: 'ticket not found'}}));
     }
-    const ticket = tickets.pending.splice(ticketIndex, 1).at(0);
-    tickets.accepted.push(ticket);
     client.send(JSON.stringify({name: 'tickets', params: tickets}));
   }
 }
