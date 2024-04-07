@@ -40,7 +40,7 @@
                 PENDING_TICKET: 'pending_ticket'
             }
             function createButtonId(ticketId, request) {
-                return JSON.stringify({name: request, params: {ticketId: ticketId}})
+                return JSON.stringify({name: request, params: {ticket_id: ticketId}})
             }
             function onButtonClick(socket, buttonId) {
                 if (buttonId == 'create_ticket') {

@@ -23,6 +23,16 @@ function onWSClientMessage(client: ws, message: string): void {
     tickets.tickets.pending.push(newTicket);
     console.log('new tickets = ' + JSON.stringify(tickets));
     client.send(JSON.stringify(tickets));
+  } else if (request.name == 'accept_ticket') {
+    console.log('tickets.tickets.pending = ' + tickets.tickets.pending);
+    const ticketIndex: number = tickets.tickets.pending.findIndex((ticket: any) => ticket.id == request.params.ticket_id);
+    if (ticketIndex == -1) {
+      client.send(JSON.stringify({name: 'error', params: {description: 'ticket not found in pending list'}}));
+      return;
+    }
+    const ticket = tickets.tickets.pending.splice(ticketIndex, 1).at(0);
+    tickets.tickets.accepted.push(ticket);
+    client.send(JSON.stringify(tickets));
   }
 }
 
