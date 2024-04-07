@@ -12,7 +12,8 @@ function onWSClientMessage(client: ws, message: string): void {
   console.log('from websocket client: ' + message);
   const request = JSON.parse(message);
   if (request.name == 'get_all_tickets') {
-    client.send(JSON.stringify(tickets));
+    // client.send(JSON.stringify(tickets));
+    client.send(JSON.stringify({name: 'tickets', params: tickets}));
   } else if (request.name == 'create_ticket') {
     const newTicket = {
       id: uuid.v4(),
@@ -20,19 +21,19 @@ function onWSClientMessage(client: ws, message: string): void {
       title: request.params.ticket_title,
       description: request.params.ticket_description
     };
-    tickets.tickets.pending.push(newTicket);
+    tickets.pending.push(newTicket);
     console.log('new tickets = ' + JSON.stringify(tickets));
-    client.send(JSON.stringify(tickets));
+    client.send(JSON.stringify({name: 'tickets', params: tickets}));
   } else if (request.name == 'accept_ticket') {
-    console.log('tickets.tickets.pending = ' + tickets.tickets.pending);
-    const ticketIndex: number = tickets.tickets.pending.findIndex((ticket: any) => ticket.id == request.params.ticket_id);
+    console.log('tickets.pending = ' + tickets.pending);
+    const ticketIndex: number = tickets.pending.findIndex((ticket: any) => ticket.id == request.params.ticket_id);
     if (ticketIndex == -1) {
       client.send(JSON.stringify({name: 'error', params: {description: 'ticket not found in pending list'}}));
       return;
     }
-    const ticket = tickets.tickets.pending.splice(ticketIndex, 1).at(0);
-    tickets.tickets.accepted.push(ticket);
-    client.send(JSON.stringify(tickets));
+    const ticket = tickets.pending.splice(ticketIndex, 1).at(0);
+    tickets.accepted.push(ticket);
+    client.send(JSON.stringify({name: 'tickets', params: tickets}));
   }
 }
 
