@@ -47,8 +47,14 @@ function onWSClientMessage(client: ws, message: string): void {
 const cert: Buffer = fs.readFileSync('certs/server.crt');
 const certKey: Buffer = fs.readFileSync('certs/server.key');
 
-const wsServer = new ws.WebSocket.Server({port: 8080});
-wsServer.on('connection', (wsc) => {
+const httpsServer: https.Server = https.createServer({cert: cert, key: certKey});
+httpsServer.on("request", (request, response) => {
+  response.writeHead(200, {'Content-Type': 'text/html'});
+  response.end(homePageContent);
+});
+
+const wssServer = new ws.WebSocket.Server({server: httpsServer});
+wssServer.on('connection', (wsc) => {
   console.log('New client connected');
   wsc.on('message', (message: string) => {
     onWSClientMessage(wsc, message);
@@ -60,13 +66,7 @@ wsServer.on('connection', (wsc) => {
 
 console.log('Websocket server started');
 
-const server: https.Server = https.createServer({cert: cert, key: certKey});
-server.on("request", (request, response) => {
-  response.writeHead(200, {'Content-Type': 'text/html'});
-  response.end(homePageContent);
-});
-
 const PORT: number = 3000;
-server.listen(PORT, () => {
+httpsServer.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
 });
