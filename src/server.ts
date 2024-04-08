@@ -1,4 +1,4 @@
-import http = require('http');
+import https = require('https');
 import fs = require('fs');
 import ws = require('ws');
 import uuid = require('uuid');
@@ -44,6 +44,9 @@ function onWSClientMessage(client: ws, message: string): void {
   }
 }
 
+const cert: Buffer = fs.readFileSync('certs/server.crt');
+const certKey: Buffer = fs.readFileSync('certs/server.key');
+
 const wsServer = new ws.WebSocket.Server({port: 8080});
 wsServer.on('connection', (wsc) => {
   console.log('New client connected');
@@ -57,7 +60,7 @@ wsServer.on('connection', (wsc) => {
 
 console.log('Websocket server started');
 
-const server: http.Server = http.createServer()
+const server: https.Server = https.createServer({cert: cert, key: certKey});
 server.on("request", (request, response) => {
   response.writeHead(200, {'Content-Type': 'text/html'});
   response.end(homePageContent);
