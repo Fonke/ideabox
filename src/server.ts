@@ -1,6 +1,7 @@
 import https = require('https');
 import fs = require('fs');
 import ws = require('ws');
+import { IncomingMessage, ServerResponse } from 'http';
 
 interface Ticket {
   id: number;
@@ -15,11 +16,29 @@ interface Tickets {
   pending: Ticket[];
 }
 
+interface Validator {
+  email: string;
+  openid: string;
+}
+
 const homePageContent = fs.readFileSync('src/index.html', 'utf-8');
 const ticketsContent = fs.readFileSync('database/tickets.json', 'utf-8');
+const validatorsContent: string = fs.readFileSync('database/validators.json', 'utf-8');
 let tickets: Tickets = JSON.parse(ticketsContent);
 //TODO(chassa_a): do sanity checks on tickets
+let validators: Validator[] = JSON.parse(validatorsContent);
+//TODO(chassa_a): do sanitu checks on validators
 let highestTicketId: number = -1;
+
+function generateAuthToken(): string {
+  let result: string = "";
+  const randomBytes: Uint8Array= crypto.getRandomValues(new Uint8Array(32));
+  for (const byte of randomBytes) {
+    result += byte.toString(16).padStart(2, "0");
+  }
+
+  return result;
+}
 
 function highestTicketIdFromDB(): number {
   for (const ticketsArray of Object.values(tickets)) {
@@ -84,7 +103,18 @@ const cert: Buffer = fs.readFileSync('certs/server.crt');
 const certKey: Buffer = fs.readFileSync('certs/server.key');
 
 const httpsServer: https.Server = https.createServer({cert: cert, key: certKey});
-httpsServer.on("request", (request, response) => {
+httpsServer.on("request", (request: IncomingMessage, response: ServerResponse<IncomingMessage>) => {
+  const cookiesHeader = request.headers.cookie;
+  console.log('cookiesHeader = ' + cookiesHeader);
+  if (cookiesHeader === undefined) {
+    const authToken: string = generateAuthToken();
+    console.log('generated auth_token: ' + authToken);
+    //TODO(chassa_a): add path=/, SameSite=strict, Max-Age=, etc...
+    response.setHeader('Set-Cookie', `auth_token=${authToken}; Secure;`);
+  }
+  else {
+    console.log('client auth_token: ' + cookiesHeader);
+  }
   response.writeHead(200, {'Content-Type': 'text/html'});
   response.end(homePageContent);
 });
