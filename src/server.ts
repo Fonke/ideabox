@@ -18,7 +18,26 @@ interface Tickets {
 
 interface Validator {
   email: string;
-  openid: string;
+  auth_token: string;
+}
+
+//TODO(chassa_a): remove params, put fields from other interfaces at the same level of name
+interface ClientRequest {
+  name: string;
+  params?: {};
+}
+
+//TODO(chassa_a): extends from a base interface which contains name
+interface CreateTicketRequest {
+  ticket_title: string;
+  ticket_description: string;
+}
+
+//TODO(chassa_a): extends from a base interface which contains name
+interface MoveTicketRequest {
+  ticket_id: number;
+  from: string;
+  to: string;
 }
 
 const homePageContent = fs.readFileSync('src/index.html', 'utf-8');
@@ -27,7 +46,7 @@ const validatorsContent: string = fs.readFileSync('database/validators.json', 'u
 let tickets: Tickets = JSON.parse(ticketsContent);
 //TODO(chassa_a): do sanity checks on tickets
 let validators: Validator[] = JSON.parse(validatorsContent);
-//TODO(chassa_a): do sanitu checks on validators
+//TODO(chassa_a): do sanity checks on validators
 let highestTicketId: number = -1;
 
 function generateAuthToken(): string {
@@ -56,7 +75,7 @@ function createTicketId(): number {
   return highestTicketId;
 }
 
-function moveTicket(ticketId: string, fromTicketListName: string, toTicketListName: string): void {
+function moveTicket(ticketId: number, fromTicketListName: string, toTicketListName: string): void {
   if (fromTicketListName === toTicketListName) {
     return;
   }
@@ -70,22 +89,24 @@ function moveTicket(ticketId: string, fromTicketListName: string, toTicketListNa
 
 function onWSClientMessage(client: ws, message: string): void {
   console.log('from websocket client: ' + message);
-  const request = JSON.parse(message);
+  const request: ClientRequest = JSON.parse(message);
   if (request.name == 'get_all_tickets') {
     client.send(JSON.stringify({name: 'tickets', params: tickets}));
   } else if (request.name == 'create_ticket') {
+    const createTicketReq: CreateTicketRequest = request.params as CreateTicketRequest;
     const newTicket: Ticket = {
       id: createTicketId(),
       creation_date: Date.now() / 1000,
-      title: request.params.ticket_title,
-      description: request.params.ticket_description
+      title: createTicketReq.ticket_title,
+      description: createTicketReq.ticket_description
     };
     tickets.pending.push(newTicket);
     console.log('new tickets = ' + JSON.stringify(tickets));
     client.send(JSON.stringify({name: 'tickets', params: tickets}));
   } else if (request.name == 'move_ticket') {
+    const moveTicketReq: MoveTicketRequest = request.params as MoveTicketRequest;
     try {
-      moveTicket(request.params.ticket_id, request.params.from, request.params.to);
+      moveTicket(moveTicketReq.ticket_id, moveTicketReq.from, moveTicketReq.to);
     } catch (error: unknown) {
       let errorDesc: string = 'unknown';
       if (error instanceof Error) {
