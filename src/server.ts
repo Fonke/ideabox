@@ -37,8 +37,12 @@ function onWSClientMessage(client: ws, message: string): void {
   } else if (request.name == 'move_ticket') {
     try {
       moveTicket(request.params.ticket_id, request.params.from, request.params.to);
-    } catch (error) {
-      client.send(JSON.stringify({name: 'error', params: {description: 'ticket not found'}}));
+    } catch (error: unknown) {
+      let errorDesc: string = 'unknown';
+      if (error instanceof Error) {
+        errorDesc = error.message;
+      }
+      client.send(JSON.stringify({name: 'error', params: errorDesc}));
     }
     client.send(JSON.stringify({name: 'tickets', params: tickets}));
   }
