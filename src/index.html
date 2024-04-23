@@ -27,6 +27,7 @@
                 background-color: lightblue;
             }
         </style>
+        <script src="https://accounts.google.com/gsi/client"></script>
         <script>
             const TABLE_HEADER = `<tr>
                                     <th>Acceptés</th>
@@ -123,10 +124,29 @@
                     }
                 })
             })
+
+            function onAuthCbk(token) {
+                console.log(token)
+            }
         </script>
     </head>
     <body>
         <h1>Boîte à idées</h1>
+        <div id="g_id_onload"
+            data-client_id="298436137567-be8chv4e1b3kii4rc8cec7q48ij6528r.apps.googleusercontent.com"
+            data-context="signin"
+            data-ux_mode="popup"
+            data-callback="onAuthCbk"
+            data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin"
+            data-type="standard"
+            data-shape="rectangular"
+            data-theme="filled_blue"
+            data-text="signin_with"
+            data-size="large"
+            data-logo_alignment="left">
+        </div>
         <label for="new_ticket_title">Entrez le titre du ticket :</label>
         <input type="text" id="new_ticket_title" name="ticket_title">
         <label for="new_ticket_desc">Entrez la description du ticket :</label>
