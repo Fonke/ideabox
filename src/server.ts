@@ -22,6 +22,8 @@ type Validator = {
 }
 
 type WSMessage = {
+  auth_token: string;
+  auth_jwt: string;
   name: string;
 }
 

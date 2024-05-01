@@ -45,6 +45,17 @@
                 REJECTED: 'rejected',
             }
 
+            function getCookie(name) {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [cookieName, cookieValue] = cookie.split('=').map(c => c.trim());
+                    if (cookieName === name) {
+                        return decodeURIComponent(cookieValue);
+                    }
+                }
+                return null;
+            }
+
             function createButtonId(ticketId, fromTicketListName, toTicketListName) {
                 return JSON.stringify({name: Request.MOVE_TICKET, ticket_id: ticketId, from: fromTicketListName, to: toTicketListName})
             }
@@ -123,9 +134,24 @@
                 })
             })
 
-            function onAuthCbk(token) {
-                console.log(token)
+            function updateCookies() {
+                //TODO(chassa_a): add sameSite=...
+                document.cookie = `auth_token=${authToken}; secure`
+                // console.log('updated authJwt = ' + JSON.stringify(authJwt))
+                if (authJwt != null) {
+                    document.cookie += `; auth_jwt=${JSON.stringify(authJwt)}; secure`
+                }
+                console.log('updated cookies: ' + document.cookie)
             }
+
+            function onAuthCbk(token) {
+                authJwt = token
+                updateCookies()
+            }
+
+            const authToken = getCookie('auth_token')
+            let authJwt = getCookie('auth_jwt')
+
         </script>
     </head>
     <body>
