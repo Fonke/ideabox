@@ -3,38 +3,34 @@ import fs = require('fs');
 import ws = require('ws');
 import { IncomingMessage, ServerResponse } from 'http';
 
-interface Ticket {
+type Ticket = {
   id: number;
   creation_date: number;
   title: string;
   description: string;
 }
 
-interface Tickets {
+type Tickets = {
   accepted: Ticket[];
   rejected: Ticket[];
   pending: Ticket[];
 }
 
-interface Validator {
+type Validator = {
   email: string;
   auth_token: string;
 }
 
-//TODO(chassa_a): remove params, put fields from other interfaces at the same level of name
-interface ClientRequest {
+type WSMessage = {
   name: string;
-  params?: {};
 }
 
-//TODO(chassa_a): extends from a base interface which contains name
-interface CreateTicketRequest {
+type CreateTicketRequest = WSMessage & {
   ticket_title: string;
   ticket_description: string;
 }
 
-//TODO(chassa_a): extends from a base interface which contains name
-interface MoveTicketRequest {
+type MoveTicketRequest = WSMessage & {
   ticket_id: number;
   from: string;
   to: string;
@@ -89,11 +85,11 @@ function moveTicket(ticketId: number, fromTicketListName: string, toTicketListNa
 
 function onWSClientMessage(client: ws, message: string): void {
   console.log('from websocket client: ' + message);
-  const request: ClientRequest = JSON.parse(message);
-  if (request.name == 'get_all_tickets') {
+  const wsmessage: WSMessage = JSON.parse(message);
+  if (wsmessage.name == 'get_all_tickets') {
     client.send(JSON.stringify({name: 'tickets', params: tickets}));
-  } else if (request.name == 'create_ticket') {
-    const createTicketReq: CreateTicketRequest = request.params as CreateTicketRequest;
+  } else if (wsmessage.name == 'create_ticket') {
+    const createTicketReq: CreateTicketRequest = wsmessage as CreateTicketRequest;
     const newTicket: Ticket = {
       id: createTicketId(),
       creation_date: Date.now() / 1000,
@@ -103,8 +99,8 @@ function onWSClientMessage(client: ws, message: string): void {
     tickets.pending.push(newTicket);
     console.log('new tickets = ' + JSON.stringify(tickets));
     client.send(JSON.stringify({name: 'tickets', params: tickets}));
-  } else if (request.name == 'move_ticket') {
-    const moveTicketReq: MoveTicketRequest = request.params as MoveTicketRequest;
+  } else if (wsmessage.name == 'move_ticket') {
+    const moveTicketReq: MoveTicketRequest = wsmessage as MoveTicketRequest;
     try {
       moveTicket(moveTicketReq.ticket_id, moveTicketReq.from, moveTicketReq.to);
     } catch (error: unknown) {

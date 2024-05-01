@@ -46,17 +46,15 @@
             }
 
             function createButtonId(ticketId, fromTicketListName, toTicketListName) {
-                return JSON.stringify({name: Request.MOVE_TICKET, params: {ticket_id: ticketId, from: fromTicketListName, to: toTicketListName}})
+                return JSON.stringify({name: Request.MOVE_TICKET, ticket_id: ticketId, from: fromTicketListName, to: toTicketListName})
             }
 
             function onButtonClick(socket, buttonId) {
                 if (buttonId == 'create_ticket') {
                     const request = {
                         name: 'create_ticket',
-                        params: {
-                            ticket_title: document.getElementById('new_ticket_title').value,
-                            ticket_description: document.getElementById('new_ticket_desc').value
-                        }
+                        ticket_title: document.getElementById('new_ticket_title').value,
+                        ticket_description: document.getElementById('new_ticket_desc').value
                     }
                     socket.send(JSON.stringify(request))
                 } else {
@@ -133,7 +131,7 @@
     <body>
         <h1>Boîte à idées</h1>
         <div id="g_id_onload"
-            data-client_id="298436137567-be8chv4e1b3kii4rc8cec7q48ij6528r.apps.googleusercontent.com"
+            data-client_id="835713360241-isin4td4unboquo6v2glakhf2t9bggpg.apps.googleusercontent.com"
             data-context="signin"
             data-ux_mode="popup"
             data-callback="onAuthCbk"
