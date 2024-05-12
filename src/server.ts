@@ -36,6 +36,14 @@ type MoveTicketRequest = WSMessage & {
   to: string;
 }
 
+type CheckAccessCodeRequest = WSMessage & {
+  access_code: string;
+}
+
+type CheckAccessCodeResponse = WSMessage & {
+  is_valid: boolean;
+}
+
 const homePageContent = fs.readFileSync('src/index.html', 'utf-8');
 const ticketsContent = fs.readFileSync('database/tickets.json', 'utf-8');
 const validatorsContent: string = fs.readFileSync('database/validators.json', 'utf-8');
@@ -43,6 +51,7 @@ let tickets: Tickets = JSON.parse(ticketsContent);
 //TODO(chassa_a): do sanity checks on tickets
 let validators: Validator[] = JSON.parse(validatorsContent);
 //TODO(chassa_a): do sanity checks on validators
+const access_code: string = JSON.parse(fs.readFileSync('database/access_code.json', 'utf-8')).access_code;
 let highestTicketId: number = -1;
 
 function parseCookies(cookiesString: string): { [key: string]: string } {
@@ -120,6 +129,12 @@ function onWSClientMessage(client: ws, message: string): void {
       client.send(JSON.stringify({name: 'error', params: errorDesc}));
     }
     client.send(JSON.stringify({name: 'tickets', params: tickets}));
+  } else if (wsmessage.name == 'check_access_code') {
+    const checkAccessCodeReq: CheckAccessCodeRequest = wsmessage as CheckAccessCodeRequest;
+    console.log('checkAccessCodeReq.access_code = "' + checkAccessCodeReq.access_code + "'");
+    console.log('access_code = "' + access_code + '"');
+    const checkAccessCodeRes: CheckAccessCodeResponse = {name: "check_access_code_response", is_valid:(checkAccessCodeReq.access_code == access_code) ? true : false};
+    client.send(JSON.stringify(checkAccessCodeRes));
   }
 }
 

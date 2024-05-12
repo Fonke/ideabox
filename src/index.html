@@ -27,7 +27,6 @@
                 background-color: lightblue;
             }
         </style>
-        <script src="https://accounts.google.com/gsi/client"></script>
         <script>
             const TABLE_HEADER = `<tr>
                                     <th>Acceptés</th>
@@ -43,6 +42,54 @@
                 PENDING: 'pending',
                 ACCEPTED: 'accepted',
                 REJECTED: 'rejected',
+            }
+
+            const AccessCodeState = {
+                NOT_CHECKED: 'not checked',
+                CHECKING_FROM_COOKIES: 'checking from cookies',
+                CHECKING_FROM_URL: 'checking from url',
+                CHECKING_FROM_SEND_BTN: 'checking from send button',
+                EMPTY: 'empty',
+                VALID: 'valid',
+                INVALID: 'invalid'
+            }
+
+            function retrieveCookies() {
+                let cookiesObj = {}
+                const cookiesString = document.cookie;
+                if (cookiesString === '') {
+                    return cookiesObj;
+                }
+                const cookiesArray = cookiesString.split(';');
+                cookiesArray.forEach(function(cookie) {
+                    const parts = cookie.split('=');
+                    const key = parts[0].trim();
+                    const value = parts[1] ? decodeURIComponent(parts[1].trim()) : '';
+                    cookiesObj[key] = value;
+                })
+
+                return cookiesObj;
+            }
+
+            function saveCookies() {
+                // TODO check accessCode is base64 only to prevent injection
+                document.cookie = `access_code=${accessCode}; SameSite=Strict`
+            }
+
+            function retrieveGetParams() {
+                let params = {};
+                if (window.location.search) {
+                    const queryParams = window.location.search.substring(1).split('&');
+                    queryParams.forEach(function(param) {
+                        const parts = param.split('=');
+                        const key = decodeURIComponent(parts[0]);
+                        const value = decodeURIComponent(parts[1] || '');
+                        if (key) {
+                            params[key] = value;
+                        }
+                    });
+                }
+                return params;
             }
 
             function createButtonId(ticketId, fromTicketListName, toTicketListName) {
@@ -105,53 +152,134 @@
                 });
             }
 
+            function onWSConnexion() {
+                if (cookies.access_code != undefined) {
+                    socket.send(JSON.stringify({name:"check_access_code", access_code:cookies.access_code}))
+                    accessCodeState = AccessCodeState.CHECKING_FROM_COOKIES
+                    return
+                }
+                if (urlGetParams.access_code != undefined) {
+                    socket.send(JSON.stringify({name:"check_access_code", access_code:urlGetParams.access_code}))
+                    accessCodeState = AccessCodeState.CHECKING_FROM_URL
+                    return
+                }
+                accessCodeState = AccessCodeState.EMPTY
+            }
+
+            function onCheckAccessCodeResponse(checkAccessCodeResponse) {
+                if (accessCodeState == AccessCodeState.CHECKING_FROM_COOKIES) {
+                    if (checkAccessCodeResponse.is_valid) {
+                        accessCode = cookies.access_code
+                        accessCodeState = AccessCodeState.VALID
+                    } else {
+                        if (urlGetParams.access_code != undefined) {
+                            socket.send(JSON.stringify({name:"check_access_code", access_code:urlGetParams.access_code}))
+                            accessCodeState = AccessCodeState.CHECKING_FROM_URL
+                        } else {
+                            accessCodeState = AccessCodeState.INVALID
+                        }
+                    }
+                } else if (accessCodeState == AccessCodeState.CHECKING_FROM_URL) {
+                    if (checkAccessCodeResponse.is_valid) {
+                        accessCode = urlGetParams.access_code
+                        accessCodeState = AccessCodeState.VALID
+                    } else {
+                        accessCodeState = AccessCodeState.INVALID
+                    }
+                } else if (accessCodeState == AccessCodeState.CHECKING_FROM_SEND_BTN) {
+                    if (checkAccessCodeResponse.is_valid) {
+                        accessCode = accessCodeFromUser
+                        accessCodeState = AccessCodeState.VALID
+                    } else {
+                        accessCodeState = AccessCodeState.INVALID
+                    }
+                }
+                if (accessCodeState == AccessCodeState.VALID) {
+                    cookies.access_code = accessCode
+                    saveCookies()
+                }
+                processEvents()
+            }
+
+            function onSendAccessCodeClick() {
+                accessCodeFromUser = document.getElementById('access_code').value
+                socket.send(JSON.stringify({name:"check_access_code", access_code:accessCodeFromUser}))
+                accessCodeState = AccessCodeState.CHECKING_FROM_SEND_BTN
+                processEvents()
+            }
+
+            function processEvents() {
+                switch (accessCodeState) {
+                    case AccessCodeState.CHECKING_FROM_COOKIES:
+                    case AccessCodeState.CHECKING_FROM_URL:
+                    case AccessCodeState.CHECKING_FROM_SEND_BTN:
+                        document.getElementById('main').innerHTML = `...`
+                        break
+                    case AccessCodeState.EMPTY:
+                    case AccessCodeState.INVALID:
+                        document.getElementById('main').innerHTML = 
+                            `<label for="access_code_desc">Code d'accès :</label>
+                            <input type="text" id="access_code" name="access_code">
+                            <button id="send_access_code_button">Send</button>`
+                        document.getElementById('send_access_code_button').addEventListener('click', () => {
+                            onSendAccessCodeClick()
+                        })
+                        break
+                    case AccessCodeState.VALID:
+                        document.getElementById('main').innerHTML = `Code d'accès valide`
+                        break
+                }
+            }
+
             document.addEventListener("DOMContentLoaded", function() {
-                const socket = new WebSocket('wss://localhost:3000')
+                // if ((window.location.pathname != '/') && (window.location.search.length != 0)) {
+                //     window.location.href = '/'
+                // }
+                socket = new WebSocket('wss://localhost:3000')
                 socket.addEventListener('open', () => {
                     console.log('websocket connexion established')
-                    const createTicketButton = document.getElementById('create_ticket')
-                    createTicketButton.addEventListener('click', () => { onButtonClick(socket, Request.CREATE_TICKET) })
-                    const request = {name:"get_all_tickets"}
-                    socket.send(JSON.stringify(request))
+                    console.log('window.location.href = ' + window.location.href)
+                    console.log('window.location.pathname = ' + window.location.pathname)
+                    console.log('window.location.search = ' + window.location.search)
+                    onWSConnexion()
+                    processEvents()
+                    // const createTicketButton = document.getElementById('create_ticket')
+                    // createTicketButton.addEventListener('click', () => { onButtonClick(socket, Request.CREATE_TICKET) })
+                    // const request = {name:"get_all_tickets"}
+                    // socket.send(JSON.stringify(request))
                 })
                 socket.addEventListener('message', (event) => {
                     console.log('data received from server: ' + event.data)
                     const response = JSON.parse(event.data)
                     if (response.name == 'tickets') {
                         onTickets(socket, response.params);
+                    } else if (response.name == 'check_access_code_response') {
+                        onCheckAccessCodeResponse(response)
                     }
                 })
             })
 
-            function onAuthCbk(token) {
-                console.log(token)
-            }
+            let socket = undefined
+            const urlGetParams = retrieveGetParams()
+            console.log('urlGetParams = ' + JSON.stringify(urlGetParams))
+            let cookies = retrieveCookies()
+            console.log('cookies = ' + JSON.stringify(cookies))
+            let accessCodeFromUser = undefined
+            let accessCode = undefined
+            let accessCodeState = AccessCodeState.NOT_CHECKED
+            console.log('cookies = ' + JSON.stringify(cookies))
         </script>
     </head>
     <body>
         <h1>Boîte à idées</h1>
-        <div id="g_id_onload"
-            data-client_id="835713360241-isin4td4unboquo6v2glakhf2t9bggpg.apps.googleusercontent.com"
-            data-context="signin"
-            data-ux_mode="popup"
-            data-callback="onAuthCbk"
-            data-auto_prompt="false">
-        </div>
-        <div class="g_id_signin"
-            data-type="standard"
-            data-shape="rectangular"
-            data-theme="filled_blue"
-            data-text="signin_with"
-            data-size="large"
-            data-logo_alignment="left">
-        </div>
-        <label for="new_ticket_title">Entrez le titre du ticket :</label>
+        <div id="main"></div>
+        <!-- <label for="new_ticket_title">Entrez le titre du ticket :</label>
         <input type="text" id="new_ticket_title" name="ticket_title">
         <label for="new_ticket_desc">Entrez la description du ticket :</label>
         <input type="text" id="new_ticket_desc" name="ticket_desc">
         <button id="create_ticket">Créer le ticket</button>
         <div id="tickets_div"></div>
         <table id="tickets_table">
-        </table>
+        </table> -->
     </body>
 </html>
