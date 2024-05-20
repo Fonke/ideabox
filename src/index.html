@@ -54,6 +54,14 @@
                 INVALID: 'invalid'
             }
 
+            const JwtState = {
+                NOT_CHECKED: 'not checked',
+                CHECKING: 'checking',
+                EMPTY: 'empty',
+                VALID: 'valid',
+                INVALID: 'invalid'
+            }
+
             function retrieveCookies() {
                 let cookiesObj = {}
                 const cookiesString = document.cookie;
